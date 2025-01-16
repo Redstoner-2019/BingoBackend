@@ -1,19 +1,14 @@
 package me.redstoner2019.bingobackend.bingo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BingoField {
-    private String[][] fields = new String[5][5];
     private Boolean[][] selections = new Boolean[5][5];
+    private List<String> bingosAchieved = new ArrayList<>();
 
-    public String[][] getFields() {
-        return fields;
-    }
-
-    public void setField(int x, int y, String value){
-        fields[x][y] = value;
-    }
-
-    public String getField(int x, int y){
-        return fields[x][y];
+    public BingoField(int width){
+        selections = new Boolean[width][width];
     }
 
     public Boolean[][] getSelections() {
@@ -25,6 +20,25 @@ public class BingoField {
     }
 
     public Boolean getSelected(int x, int y){
+        if(selections[x][y] == null) return false;
         return selections[x][y];
+    }
+
+    public List<String> getBingosAchieved() {
+        return bingosAchieved;
+    }
+
+    public boolean isBingoAchieved(String bingo) {
+        return bingosAchieved.contains(bingo);
+    }
+
+    public void clearBingoAchieved(String bingo) {
+        if(isBingoAchieved(bingo)) bingosAchieved.remove(bingo);
+    }
+
+    public void addBingoAchieved(String bingo){
+        if(!bingosAchieved.contains(bingo)){
+            bingosAchieved.add(bingo);
+        }
     }
 }

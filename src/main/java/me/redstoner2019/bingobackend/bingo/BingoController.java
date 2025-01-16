@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -66,8 +67,12 @@ public class BingoController {
                 return ResponseEntity.status(401).body("Token not found: Unauthorized");
             }
 
-            if(!json.has("cardId")){
-                return ResponseEntity.status(400).body("cardId not found");
+            if(!json.has("x")){
+                return ResponseEntity.status(400).body("x not found");
+            }
+
+            if(!json.has("y")){
+                return ResponseEntity.status(400).body("y not found");
             }
 
             if(!json.has("gameId")){
@@ -76,17 +81,61 @@ public class BingoController {
 
             JSONObject tokenInfo = TokenChecker.getTokenInfo(json.getString("token"));
 
-            Bingo bingo = BingoManager.getBingo(tokenInfo.getString("gameId"));
+            Bingo bingo = BingoManager.getBingo(json.getString("gameId"));
 
             if(bingo.hasPlayer(tokenInfo.getString("username"))){
-                bingo.toggleCard(tokenInfo.getString("username"),json.getString("cardId"));
+                bingo.toggleCard(tokenInfo.getString("username"),json.getInt("x"),json.getInt("y"));
             } else {
+                System.out.println("Unauthorized");
                 return ResponseEntity.status(401).body("Not in this game: Unauthorized");
             }
 
             JSONObject result = new JSONObject();
 
             result.put("bingoId", bingo.getBingoId());
+            result.put("notifications",bingo.getNotifications(tokenInfo.getString("username")));
+            bingo.clearNotifications(tokenInfo.getString("username"));
+
+            return ResponseEntity.ok(result.toString());
+        }catch (Exception e){
+            e.printStackTrace();
+            JSONObject response = new JSONObject();
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(200).body(response.toString());
+        }
+    }
+
+    @PostMapping("/bingo/getNotifications")
+    public ResponseEntity<String> getNotifications(@RequestBody String jsonString) {
+        try{
+            JSONObject json = new JSONObject(jsonString);
+
+            if(!json.has("token")){
+                return ResponseEntity.status(401).body("Token not found: Unauthorized");
+            }
+
+            if(!json.has("gameId")){
+                return ResponseEntity.status(400).body("gameId not found");
+            }
+
+            JSONObject tokenInfo = TokenChecker.getTokenInfo(json.getString("token"));
+
+            Bingo bingo = BingoManager.getBingo(json.getString("gameId"));
+
+            if(bingo == null){
+                return ResponseEntity.status(404).body("Bingo not found");
+            }
+
+            if(!bingo.hasPlayer(tokenInfo.getString("username"))){
+                System.out.println("Unauthorized " + tokenInfo.getString("username"));
+                return ResponseEntity.status(401).body("Not in this game: Unauthorized");
+            }
+
+            JSONObject result = new JSONObject();
+
+            result.put("bingoId", bingo.getBingoId());
+            result.put("notifications",bingo.getNotifications(tokenInfo.getString("username")));
+            bingo.clearNotifications(tokenInfo.getString("username"));
 
             return ResponseEntity.ok(result.toString());
         }catch (Exception e){
@@ -131,10 +180,27 @@ public class BingoController {
 
             JSONObject result = new JSONObject();
 
+            if(bingo == null){
+                result.put("error","Bingo doesnt exist.");
+                return ResponseEntity.status(404).body(result.toString());
+            }
+
             result.put("bingoId", bingo.getBingoId());
             result.put("name", bingo.getName());
             result.put("creator", bingo.getCreator());
             result.put("presetId", bingo.getPresetId());
+
+            String username = TokenChecker.getUsername(json.getString("token"));
+
+            JSONObject selections = new JSONObject();
+
+            for (int x = 0; x < 5; x++) {
+                for (int y = 0; y < 5; y++) {
+                    selections.put(x + "-" + y,bingo.getBf(username).getSelected(x,y));
+                }
+            }
+
+            result.put("selections", selections);
 
             JSONArray cardsArray = new JSONArray();
 
@@ -143,19 +209,12 @@ public class BingoController {
 
             Random random = new Random((TokenChecker.getUsername(json.getString("token")) + bingo.getBingoId()).hashCode());
 
-            for (int i = 0; i < 25; i++) {
-                if(!cards.isEmpty()){
-                    if(cards.size() == 1){
-                        cardsArray.put(cards.get(0));
-                        cards.remove(0);
-                        continue;
-                    }
-                    int index = random.nextInt(cards.size() - 1);
-                    cardsArray.put(cards.get(index));
-                    cards.remove(index);
-                } else {
-                    cardsArray.put(" - ");
-                }
+            while (cards.size() < 25) cards.add("-");
+
+            Collections.shuffle(cards,random);
+
+            for(String s : cards){
+                cardsArray.put(s);
             }
 
             result.put("cards", cardsArray);
@@ -169,7 +228,55 @@ public class BingoController {
     }
 
     @PostMapping("/bingo/join")
-    public ResponseEntity<String> join() {
-        return ResponseEntity.ok("Hello World");
+    public ResponseEntity<String> join(@RequestBody String jsonString) {
+        try{
+            JSONObject json = new JSONObject(jsonString);
+
+            if(!json.has("token")){
+                return ResponseEntity.status(401).body("Token not found: Unauthorized");
+            }
+
+            if(!json.has("id")){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing id");
+            }
+
+            Bingo bingo = BingoManager.getBingo(json.getString("id"));
+
+            JSONObject result = new JSONObject();
+
+            if(bingo == null){
+                result.put("error","Bingo doesnt exist.");
+                return ResponseEntity.status(404).body(result.toString());
+            }
+
+            String username = TokenChecker.getUsername(json.getString("token"));
+
+            System.out.println("Joining " + username);
+
+            bingo.joinPlayer(username);
+
+            JSONArray cardsArray = new JSONArray();
+
+            List<String> cards = new ArrayList<>(bingo.getBingoCards());
+            //List<String> cards = List.copyOf(bingo.getBingoCards());
+
+            Random random = new Random((TokenChecker.getUsername(json.getString("token")) + bingo.getBingoId()).hashCode());
+
+            while (cards.size() < 25) cards.add("-");
+
+            Collections.shuffle(cards,random);
+
+            for(String s : cards){
+                cardsArray.put(s);
+            }
+
+            result.put("cards", cardsArray);
+            return ResponseEntity.ok(result.toString());
+        }catch (Exception e){
+            e.printStackTrace();
+            JSONObject response = new JSONObject();
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(200).body(response.toString());
+        }
     }
 }

@@ -10,7 +10,7 @@
     </parent>
     <groupId>me.redstoner2019</groupId>
     <artifactId>BingoBackend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>BingoBackend</name>
     <description>BingoBackend</description>
     <url/>

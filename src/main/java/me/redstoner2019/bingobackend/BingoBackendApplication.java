@@ -22,6 +22,8 @@ public class BingoBackendApplication {
 
         Bingo bingo = new Bingo(cards,"Server UwU", "Maximus Primus","test");
 
+        BingoManager.start();
+
         BingoManager.addBingo(bingo);
     }
 

@@ -88,7 +88,7 @@ public class BingoPresetController {
                 return ResponseEntity.status(401).body("Unauthenticated: Invalid or expired token");
             }
 
-            BingoPreset preset = new BingoPreset(UUID.randomUUID().toString(),true,TokenChecker.getUsername(request.getString("token")),"Bingo",false,"[ ]",System.currentTimeMillis());
+            BingoPreset preset = new BingoPreset(UUID.randomUUID().toString(),true,TokenChecker.getUsername(request.getString("token")),"Bingo",false,"[ ]",System.currentTimeMillis(), 5);
 
             bingoPresetJpaRepository.save(preset);
 
@@ -101,6 +101,7 @@ public class BingoPresetController {
             result.put("cards", preset.getCards());
             result.put("created-at", preset.getCreatedAt());
             result.put("name",preset.getName());
+            result.put("width",preset.getWidth());
 
             return ResponseEntity.ok(result.toString());
         }catch (JSONException e){
@@ -142,6 +143,7 @@ public class BingoPresetController {
             result.put("cards", preset.get().getCards());
             result.put("created-at", preset.get().getCreatedAt());
             result.put("name",preset.get().getName());
+            result.put("width",preset.get().getWidth());
 
             return ResponseEntity.ok(result.toString());
         }catch (JSONException e){
@@ -190,6 +192,10 @@ public class BingoPresetController {
 
             if(request.has("public")){
                 preset.setPublic(request.getBoolean("public"));
+            }
+
+            if(request.has("width")){
+                preset.setWidth(request.getInt("width"));
             }
 
             if(request.has("cards")){

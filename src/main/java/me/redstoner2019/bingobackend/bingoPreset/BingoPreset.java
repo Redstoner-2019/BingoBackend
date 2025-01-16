@@ -26,15 +26,17 @@ public class BingoPreset {
     @Column(name="cards", columnDefinition = "MEDIUMTEXT")
     private String cards;
 
-
     @Column(name="createdAt")
     private long createdAt;
+
+    @Column(name="width")
+    private int width;
 
     public BingoPreset() {
 
     }
 
-    public BingoPreset(String id, boolean sameCards, String owner, String name, boolean isPublic, String cards, long createdAt) {
+    public BingoPreset(String id, boolean sameCards, String owner, String name, boolean isPublic, String cards, long createdAt, int width) {
         this.id = id;
         this.sameCards = sameCards;
         this.owner = owner;
@@ -98,5 +100,13 @@ public class BingoPreset {
 
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
     }
 }
